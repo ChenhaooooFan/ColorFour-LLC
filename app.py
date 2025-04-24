@@ -26,32 +26,49 @@ st.markdown("""
     h1, h2, h3 {
         color: #e91e63;
         font-weight: 700;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .stButton > button {
-        background-color: #e91e63;
+        background: linear-gradient(to right, #f06292, #ec407a);
         color: white;
         font-weight: bold;
-        border: none;
-        border-radius: 0.5rem;
+        border: 2px solid transparent;
+        border-radius: 12px;
         padding: 0.6rem 1.2rem;
+        box-shadow: 0 4px 10px rgba(233,30,99,0.3);
+        transition: all 0.3s ease-in-out;
     }
     .stButton > button:hover {
-        background-color: #d81b60;
+        background: linear-gradient(to right, #ec407a, #f06292);
+        transform: scale(1.03);
     }
     .stDownloadButton > button {
-        background-color: #7b1fa2;
+        background: linear-gradient(to right, #ba68c8, #7b1fa2);
         color: white;
         font-weight: bold;
-        border-radius: 0.5rem;
+        border-radius: 10px;
         padding: 0.5rem 1.2rem;
-    }
-    .stDataFrame th, .stDataFrame td {
-        font-size: 14px;
     }
     .stSidebar > div:first-child {
         background-color: #ffe3f2;
-        padding: 1rem;
+        padding: 1.2rem;
         border-radius: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .stDataFrame th {
+        background-color: #fce4ec;
+        color: #c2185b;
+    }
+    .stDataFrame td {
+        background-color: #fff0f5;
+        color: #333;
+    }
+    .stMarkdown {
+        background-color: white;
+        border-radius: 1rem;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        margin-bottom: 1rem;
     }
     </style>
 """, unsafe_allow_html=True)
