@@ -9,6 +9,52 @@ st.set_page_config(page_title="NailVesta Weekly Analysis Tool", layout="wide")
 st.title("NailVesta Weekly Analysis Tool")
 st.caption("Empowering beautiful nails with smart data 💖")
 
+# ========== 粉色美学风格 ==========
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+    html, body, [class*="css"]  {
+        font-family: 'Roboto', sans-serif;
+        background-color: #f9f7fb;
+        color: #111111;
+    }
+    .main {
+        background-color: #f9f7fb;
+        padding: 2rem;
+    }
+    h1, h2, h3 {
+        color: #e91e63;
+        font-weight: 700;
+    }
+    .stButton > button {
+        background-color: #e91e63;
+        color: white;
+        font-weight: bold;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.6rem 1.2rem;
+    }
+    .stButton > button:hover {
+        background-color: #d81b60;
+    }
+    .stDownloadButton > button {
+        background-color: #7b1fa2;
+        color: white;
+        font-weight: bold;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1.2rem;
+    }
+    .stDataFrame th, .stDataFrame td {
+        font-size: 14px;
+    }
+    .stSidebar > div:first-child {
+        background-color: #ffe3f2;
+        padding: 1rem;
+        border-radius: 1rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
 # ========== 上传 ==========
 this_week_file = st.sidebar.file_uploader("📁 上传本周数据", type="csv")
 last_week_file = st.sidebar.file_uploader("📁 上传上周数据", type="csv")
