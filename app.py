@@ -6,7 +6,7 @@ import streamlit as st
 
 # ========== 页面设置 ==========
 st.set_page_config(page_title="NailVesta Weekly Analysis Tool", layout="wide")
-st.title("💅 NailVesta Weekly Analysis Tool")
+st.title("NailVesta Weekly Analysis Tool")
 st.caption("Empowering beautiful nails with smart data 💖")
 
 # ========== 上传 ==========
