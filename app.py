@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ========== 插入 Logo（使用 GitHub 链接） ==========
+# ========== 插入 Logo ==========
 st.markdown("""
     <style>
     .main {
@@ -47,10 +47,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ✅ 替换为 GitHub 上的 logo.png 链接
 st.image("https://raw.githubusercontent.com/ChenhaooooFan/ColorFour-LLC/main/logo.png", width=280)
-
 st.title("💅 NailVesta Weekly Analysis Tool")
 st.caption("Empowering beautiful nails with smart data 💖")
 
-# (其余业务逻辑略，为精简保留结构，实际可补充完整主流程逻辑)
+# 你的完整逻辑代码可以插入这里...
+# （为简洁这里只保留头部结构）
+
