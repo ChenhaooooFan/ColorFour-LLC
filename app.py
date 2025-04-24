@@ -10,8 +10,8 @@ st.title("💅 NailVesta Weekly Analysis Tool")
 st.caption("Empowering beautiful nails with smart data 💖")
 
 # ========== 上传 ==========
-this_week_file = st.sidebar.file_uploader("📁 上传本周数据 (WEEK_16.csv)", type="csv")
-last_week_file = st.sidebar.file_uploader("📁 上传上周数据 (WEEK_15.csv)", type="csv")
+this_week_file = st.sidebar.file_uploader("📁 上传本周数据", type="csv")
+last_week_file = st.sidebar.file_uploader("📁 上传上周数据", type="csv")
 inventory_file = st.sidebar.file_uploader("📁 上传库存表", type="csv")
 
 # ========== 主逻辑 ==========
