@@ -9,6 +9,54 @@ except ModuleNotFoundError:
 
 st.set_page_config(page_title="Nail Weekly Report", layout="wide")
 st.title("💅 Nail Style Weekly Analysis Tool")
+# ========== 页面设置 ==========
+st.set_page_config(
+    page_title="NailVesta Weekly Analysis Tool",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ========== 自定义样式 ==========
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+    html, body, [class*="css"]  {
+        font-family: 'Roboto', sans-serif;
+    }
+    .main {
+        background-color: #f9f7fb;
+        padding: 2rem;
+    }
+    h1, h2, h3 {
+        color: #e91e63;
+        font-weight: 700;
+    }
+    .stButton > button {
+        background-color: #e91e63;
+        color: white;
+        font-weight: bold;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.6rem 1.2rem;
+    }
+    .stDownloadButton > button {
+        background-color: #7b1fa2;
+        color: white;
+        font-weight: bold;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1.2rem;
+    }
+    .stDataFrame th, .stDataFrame td {
+        font-size: 14px;
+    }
+    .stSidebar > div:first-child {
+        background-color: #ffe3f2;
+        padding: 1rem;
+        border-radius: 1rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # ========== 上传文件 ========== 
 this_week_file = st.file_uploader("📤 Upload This Week's CSV", type="csv", key="this")
