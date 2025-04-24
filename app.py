@@ -11,8 +11,8 @@ st.set_page_config(page_title="Nail Weekly Report", layout="wide")
 st.title("💅 Nail Style Weekly Analysis Tool")
 
 # ========== 上传文件 ========== 
-this_week_file = st.file_uploader("📤 Upload WEEK_16 CSV", type="csv", key="this")
-last_week_file = st.file_uploader("📤 Upload WEEK_15 CSV", type="csv", key="last")
+this_week_file = st.file_uploader("📤 Upload This Week's CSV", type="csv", key="this")
+last_week_file = st.file_uploader("📤 Upload Last Week's CSV", type="csv", key="last")
 inventory_file = st.file_uploader("📤 Upload Inventory CSV", type="csv", key="inventory")
 
 # ========== 数据清洗函数 ==========
