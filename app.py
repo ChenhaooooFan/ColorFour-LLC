@@ -10,7 +10,7 @@ st.title("NailVesta Weekly Analysis Tool")
 st.caption("Empowering beautiful nails with smart data 💖")
 
 # ========== 粉色美学风格 ==========
-st.markdown("Empowering beautiful nails with smart data 💖"
+st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
