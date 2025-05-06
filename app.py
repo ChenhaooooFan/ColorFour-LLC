@@ -178,9 +178,9 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
 
      # 自动补货计算
     st.subheader("📦 补货建议表")
-    production_days = 5
-    shipping_days = 11
-    safety_days = 7
+    production_days = 6
+    shipping_days = 12
+    safety_days = 10
     total_days = production_days + shipping_days + safety_days
     summary_df['Daily Avg'] = summary_df['Total Count'] / 7
     summary_df['Growth Multiplier'] = 1 + summary_df['Growth Rate'] / 100
