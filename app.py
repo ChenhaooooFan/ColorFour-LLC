@@ -5,7 +5,7 @@ import streamlit as st
 import datetime
 
 # ========== 页面设置 ==========
-st.set_page_config(page_title="NailVesta Weekly Analysis Tool", layout="wide")
+st.set_page_config(page_title="NailVesta Weekly Analysis Tool！", layout="wide")
 st.title("NailVesta Weekly Analysis Tool")
 st.caption("Empowering beautiful nails with smart data 💖")
 
@@ -72,7 +72,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ========== 上传 ==========
+# ========== 文件上传 ==========
 this_week_file = st.sidebar.file_uploader("📁 上传本周数据", type="csv")
 last_week_file = st.sidebar.file_uploader("📁 上传上周数据", type="csv")
 inventory_file = st.sidebar.file_uploader("📁 上传库存表", type="csv")
@@ -98,43 +98,6 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     df_this = clean_variation(df_this)
     df_last = clean_variation(df_last)
 
-    # 款式频率图
-    variation_counts = df_this['Variation Name'].value_counts()
-    fig, ax = plt.subplots(figsize=(12, 6))
-    sns.barplot(x=variation_counts.values, y=variation_counts.index, palette='viridis', ax=ax)
-    ax.set_xlabel('Count')
-    ax.set_ylabel('Variation')
-    ax.set_title('Variation Frequency')
-    for i, v in enumerate(variation_counts.values):
-        ax.text(v, i, str(v), va='center')
-    st.pyplot(fig)
-
-    # 尺寸分析图
-    df_this['Size'] = df_this['Variation'].astype(str).str.rsplit(',', n=1).str[1].str.strip()
-    size_counts = df_this['Size'].value_counts(normalize=True) * 100
-    fig, ax = plt.subplots(figsize=(8, 4))
-    sns.barplot(x=size_counts.values, y=size_counts.index, palette='coolwarm', ax=ax)
-    ax.set_xlabel('Percentage')
-    ax.set_ylabel('Size')
-    ax.set_title('Size Frequency (S, M, L)')
-    for i, v in enumerate(size_counts.values):
-        ax.text(v, i, f'{v:.2f}%', va='center')
-    st.pyplot(fig)
-
-    # 形状分析图
-    df_this = df_this.dropna(subset=['Seller SKU'])
-    df_this['Shape'] = df_this['Seller SKU'].astype(str).str[2]
-    shape_counts = df_this['Shape'].map({'F': 'Rectangle', 'X': 'Almond', 'J': 'Pointed'}).value_counts(normalize=True) * 100
-    fig, ax = plt.subplots(figsize=(8, 4))
-    sns.barplot(x=shape_counts.values, y=shape_counts.index, palette='magma', ax=ax)
-    ax.set_xlabel('Percentage')
-    ax.set_ylabel('Shape')
-    ax.set_title('Nail Shape Frequency')
-    for i, v in enumerate(shape_counts.values):
-        ax.text(v, i, f'{v:.2f}%', va='center')
-    st.pyplot(fig)
-
-    # 销售 + 免费占比分析
     df_this['SKU Unit Original Price'] = pd.to_numeric(df_this['SKU Unit Original Price'], errors='coerce').fillna(0)
     df_last['SKU Unit Original Price'] = pd.to_numeric(df_last['SKU Unit Original Price'], errors='coerce').fillna(0)
     sold_this = df_this[df_this['SKU Unit Original Price'] > 0]['Variation Name'].value_counts()
@@ -156,7 +119,6 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     ) * 100
     summary_df = summary_df.sort_values(by='Total Count', ascending=False)
 
-    # 补货建议逻辑
     st.subheader("📦 补货建议表")
     production_days = 6
     shipping_days = 12
@@ -170,7 +132,6 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     summary_df['未来三周赠送量'] = (summary_df['Zero Price Count'] / 7 * 21).round().astype(int)
     summary_df['总补货需求'] = summary_df['Restock Qty'] + summary_df['未来三周赠送量']
 
-    # 仓库数据分析（合并库存 + 推导比例补货）
     if inventory_file:
         inventory_df = pd.read_csv(inventory_file)
         inventory_df = inventory_df.rename(columns={
@@ -179,15 +140,15 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
             'On_the_way': 'On The Way'
         })
         inventory_df['库存数量'] = inventory_df['In Stock'].fillna(0) + inventory_df['On The Way'].fillna(0)
-        inventory_df['Variation Name'] = inventory_df['Variation Name'].astype(str).str.replace("’", "'").str.replace(r'\s+', ' ', regex=True).str.strip().str.lower().str.title()
-        stock_map = inventory_df.groupby('Variation Name')['库存数量'].sum()
-        summary_df['当前库存'] = summary_df.index.map(stock_map).fillna(0).astype(int)
-        summary_df['最终补货量'] = (summary_df['Restock Qty'] - summary_df['当前库存']).clip(lower=0)
 
-        # Size-based adjustment
+        # 从 Seller SKU 提取 Size
+        inventory_df['Size'] = inventory_df['Seller SKU'].str.extract(r'-(S|M|L)$')
         summary_df = summary_df.reset_index().rename(columns={'index': 'Variation Name'})
-        summary_df['Size'] = summary_df['Variation Name'].str.extract(r'(S|M|L)$')
-        inventory_df['Size'] = inventory_df['Variation Name'].str.extract(r'(S|M|L)$')
+        if 'Seller SKU' in df_this.columns:
+            summary_df['Seller SKU'] = df_this['Seller SKU']
+            summary_df['Size'] = summary_df['Seller SKU'].str.extract(r'-(S|M|L)$')
+        else:
+            summary_df['Size'] = summary_df['Variation Name'].str.extract(r'(S|M|L)$')
 
         stock_by_size = inventory_df.groupby('Size')['库存数量'].sum().reindex(['S', 'M', 'L']).fillna(0)
         demand_by_size = summary_df.groupby('Size')['总补货需求'].sum().reindex(['S', 'M', 'L']).fillna(0)
@@ -215,13 +176,6 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
             balanced_result['补完后库存'].sum()
         ).apply(lambda r: f"{r:.1%}")
 
-        st.subheader("📏 调整后补货建议（目标比例 S:M:L = 2:2:1）")
+        st.subheader("🎽 调整后补货建议（目标比例 S:M:L = 2:2:1）")
         st.dataframe(balanced_result)
-        st.download_button("📥 下载尺寸比例补货建议", balanced_result.to_csv().encode('utf-8-sig'), "balanced_size_restock.csv", "text/csv")
-
-    # 原始表导出
-    restock_table = summary_df[["Variation Name", "Sold Count", "Last Week Sold Count", "Growth Rate", "Daily Avg", "Growth Multiplier", "Restock Qty", "未来三周赠送量", "总补货需求", "当前库存", "最终补货量", "Size"]]
-    today = datetime.date.today().strftime("%Y-%m-%d")
-    st.dataframe(restock_table)
-    st.download_button("📥 下载完整补货建议", restock_table.to_csv(index=False).encode('utf-8-sig'), f"restock_summary_{today}.csv", "text/csv")
-
+        st.download_button("📅 下载尺寸比例补货建议", balanced_result.to_csv().encode('utf-8-sig'), "balanced_size_restock.csv", "text/csv")
