@@ -1,8 +1,8 @@
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
+import datetime
 
 # ========== 页面设置 ==========
 st.set_page_config(page_title="NailVesta Weekly Analysis Tool！", layout="wide")
@@ -13,7 +13,6 @@ st.caption("Empowering beautiful nails with smart data 💖")
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-
     html, body, [class*="css"]  {
         font-family: 'Roboto', sans-serif;
         background-color: #f9f7fb;
@@ -72,6 +71,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
 # ========== 上传 ==========
 this_week_file = st.sidebar.file_uploader("📁 上传本周数据", type="csv")
 last_week_file = st.sidebar.file_uploader("📁 上传上周数据", type="csv")
@@ -82,7 +82,6 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     df_this = pd.read_csv(this_week_file)
     df_last = pd.read_csv(last_week_file)
 
-    # 清洗函数
     def clean_variation(df):
         df = df.dropna(subset=['Variation'])
         df['Variation Name'] = (
@@ -157,26 +156,7 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     ) * 100
     summary_df = summary_df.sort_values(by='Total Count', ascending=False)
 
-    fig, ax = plt.subplots(figsize=(16, 12))
-    ax.barh(summary_df.index, summary_df['Sold Count'], color='blue', label='Sold')
-    ax.barh(summary_df.index, summary_df['Zero Price Count'], left=summary_df['Sold Count'], color='red', alpha=0.6, label='Free')
-    for i, (name, sold, zero, total, perc, growth) in enumerate(zip(
-        summary_df.index, summary_df['Sold Count'], summary_df['Zero Price Count'],
-        summary_df['Total Count'], summary_df['Zero Price Percentage'], summary_df['Growth Rate']
-    )):
-        growth_text = f" ↑ {growth:.1f}%" if growth > 0 else f" ↓ {abs(growth):.1f}%" if growth < 0 else " → 0.0%"
-        color = '#2ecc71' if growth > 0 else '#e74c3c' if growth < 0 else 'gray'
-        ax.text(-5, i, f"{name}{growth_text}", ha='right', va='center', fontsize=10, color=color, fontweight='bold')
-        free_text = f"{zero}/{total} ({(zero / total * 100):.1f}%)" if total > 0 else f"{zero}/0 (0.0%)"
-        ax.text(sold + zero + 2, i, free_text, va='center', ha='left', color='red' if perc > 65 else 'black', fontsize=10)
-    ax.set_xlabel("Count")
-    ax.set_title("Week 16 vs Week 15: Sales + Growth + Free Sample Rate")
-    ax.legend()
-    ax.set_yticks([])
-    ax.invert_yaxis()
-    st.pyplot(fig)
-
-     # 自动补货计算
+    # 补货建议逻辑
     st.subheader("📦 补货建议表")
     production_days = 6
     shipping_days = 12
@@ -187,7 +167,10 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     overall_growth = 1 + summary_df['Growth Rate'].mean() / 100
     summary_df.loc[summary_df['Growth Multiplier'] > 1.8, 'Growth Multiplier'] = overall_growth
     summary_df['Restock Qty'] = (summary_df['Daily Avg'] * total_days * summary_df['Growth Multiplier']).round().astype(int)
+    summary_df['未来三周赠送量'] = (summary_df['Zero Price Count'] / 7 * 21).round().astype(int)
+    summary_df['总补货需求'] = summary_df['Restock Qty'] + summary_df['未来三周赠送量']
 
+    # 仓库数据分析（合并库存 + 推导比例补货）
     if inventory_file:
         inventory_df = pd.read_csv(inventory_file)
         inventory_df = inventory_df.rename(columns={
@@ -201,6 +184,44 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
         summary_df['当前库存'] = summary_df.index.map(stock_map).fillna(0).astype(int)
         summary_df['最终补货量'] = (summary_df['Restock Qty'] - summary_df['当前库存']).clip(lower=0)
 
-    restock_table = summary_df[["Sold Count", "Last Week Sold Count", "Growth Rate", "Daily Avg", "Growth Multiplier", "Restock Qty", "当前库存", "最终补货量"]]
+        # Size-based adjustment
+        summary_df = summary_df.reset_index().rename(columns={'index': 'Variation Name'})
+        summary_df['Size'] = summary_df['Variation Name'].str.extract(r'(S|M|L)$')
+        inventory_df['Size'] = inventory_df['Variation Name'].str.extract(r'(S|M|L)$')
+
+        stock_by_size = inventory_df.groupby('Size')['库存数量'].sum().reindex(['S', 'M', 'L']).fillna(0)
+        demand_by_size = summary_df.groupby('Size')['总补货需求'].sum().reindex(['S', 'M', 'L']).fillna(0)
+
+        S0, M0, L0 = stock_by_size['S'], stock_by_size['M'], stock_by_size['L']
+        total_demand = demand_by_size.sum()
+
+        x = (total_demand + M0 + L0 - 1.5 * S0) / 2.5
+        y = x + S0 - M0
+        z = (x + S0) / 2 - L0
+
+        x = max(round(x), 0)
+        y = max(round(y), 0)
+        z = max(round(z), 0)
+
+        balanced_result = pd.DataFrame({
+            '当前库存': [S0, M0, L0],
+            '原始需求': demand_by_size,
+            '建议补货量': [x, y, z],
+            '补完后库存': [S0 + x, M0 + y, L0 + z],
+        }, index=['S', 'M', 'L'])
+
+        balanced_result['补完后比例'] = (
+            balanced_result['补完后库存'] /
+            balanced_result['补完后库存'].sum()
+        ).apply(lambda r: f"{r:.1%}")
+
+        st.subheader("📏 调整后补货建议（目标比例 S:M:L = 2:2:1）")
+        st.dataframe(balanced_result)
+        st.download_button("📥 下载尺寸比例补货建议", balanced_result.to_csv().encode('utf-8-sig'), "balanced_size_restock.csv", "text/csv")
+
+    # 原始表导出
+    restock_table = summary_df[["Variation Name", "Sold Count", "Last Week Sold Count", "Growth Rate", "Daily Avg", "Growth Multiplier", "Restock Qty", "未来三周赠送量", "总补货需求", "当前库存", "最终补货量", "Size"]]
+    today = datetime.date.today().strftime("%Y-%m-%d")
     st.dataframe(restock_table)
-    st.download_button("📥 下载补货建议", restock_table.to_csv().encode('utf-8-sig'), "restock_summary.csv", "text/csv")
+    st.download_button("📥 下载完整补货建议", restock_table.to_csv(index=False).encode('utf-8-sig'), f"restock_summary_{today}.csv", "text/csv")
+
