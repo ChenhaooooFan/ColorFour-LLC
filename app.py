@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 import datetime
+import zipfile
+import io
+import os
 
 # ========== 页面设置 ==========
 st.set_page_config(page_title="NailVesta Weekly Analysis Tool！", layout="wide")
@@ -176,6 +179,17 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
             balanced_result['补完后库存'].sum()
         ).apply(lambda r: f"{r:.1%}")
 
-        st.subheader("🎽 调整后补货建议（目标比例 S:M:L = 2:2:1）")
+        st.subheader("🧵 调整后补货建议（目标比例 S:M:L = 2:2:1）")
         st.dataframe(balanced_result)
-        st.download_button("📅 下载尺寸比例补货建议", balanced_result.to_csv().encode('utf-8-sig'), "balanced_size_restock.csv", "text/csv")
+
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        restock_csv = summary_df.to_csv(index=False).encode('utf-8-sig')
+        balanced_csv = balanced_result.to_csv().encode('utf-8-sig')
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w") as zipf:
+            zipf.writestr(f"restock_summary_{today}.csv", restock_csv)
+            zipf.writestr(f"balanced_size_restock.csv", balanced_csv)
+        zip_buffer.seek(0)
+
+        st.download_button("📦 下载全部补货数据（ZIP 包）", data=zip_buffer, file_name="NailVesta_Restock_Report.zip", mime="application/zip")
