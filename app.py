@@ -104,6 +104,41 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     df_last = clean_variation(df_last)
     df_this['Size'] = df_this['Variation'].astype(str).str.rsplit(',', n=1).str[1].str.strip()
 
+    # 款式频率图
+    variation_counts = df_this['Variation Name'].value_counts()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sns.barplot(x=variation_counts.values, y=variation_counts.index, palette='viridis', ax=ax)
+    ax.set_xlabel('Count')
+    ax.set_ylabel('Variation')
+    ax.set_title('Variation Frequency')
+    for i, v in enumerate(variation_counts.values):
+        ax.text(v, i, str(v), va='center')
+    st.pyplot(fig)
+
+    # 尺寸分析图
+    df_this['Size'] = df_this['Variation'].astype(str).str.rsplit(',', n=1).str[1].str.strip()
+    size_counts = df_this['Size'].value_counts(normalize=True) * 100
+    fig, ax = plt.subplots(figsize=(8, 4))
+    sns.barplot(x=size_counts.values, y=size_counts.index, palette='coolwarm', ax=ax)
+    ax.set_xlabel('Percentage')
+    ax.set_ylabel('Size')
+    ax.set_title('Size Frequency (S, M, L)')
+    for i, v in enumerate(size_counts.values):
+        ax.text(v, i, f'{v:.2f}%', va='center')
+    st.pyplot(fig)
+
+    # 形状分析图
+    df_this = df_this.dropna(subset=['Seller SKU'])
+    df_this['Shape'] = df_this['Seller SKU'].astype(str).str[2]
+    shape_counts = df_this['Shape'].map({'F': 'Rectangle', 'X': 'Almond', 'J': 'Pointed'}).value_counts(normalize=True) * 100
+    fig, ax = plt.subplots(figsize=(8, 4))
+    sns.barplot(x=shape_counts.values, y=shape_counts.index, palette='magma', ax=ax)
+    ax.set_xlabel('Percentage')
+    ax.set_ylabel('Shape')
+    ax.set_title('Nail Shape Frequency')
+    for i, v in enumerate(shape_counts.values):
+        ax.text(v, i, f'{v:.2f}%', va='center')
+    st.pyplot(fig)
     # ========== 赠送量分析 ==========
     zero_price = df_this[df_this['SKU Unit Original Price'] == 0]['Variation Name'].value_counts()
     daily_zero_price = zero_price / 7
