@@ -157,10 +157,22 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
             current_m = size_row.get('M', 0)
             current_l = size_row.get('L', 0)
             total_current = current_s + current_m + current_l
-            total_future = total_current + size_row['总补货量']
+            total_restock = size_row['总补货量']
+
+            # 如果无需补货，直接返回 0，无预警
+            if total_restock == 0:
+                return pd.Series({
+                    '补S': 0,
+                    '补M': 0,
+                    '补L': 0,
+                    '⚠️库存预警': ''
+                })
+
+            total_future = total_current + total_restock
             s_target = round(total_future * 2 / 5)
             m_target = round(total_future * 2 / 5)
             l_target = total_future - s_target - m_target
+
             warn = []
             if current_s + (s_target - current_s) < safety_days:
                 warn.append('S')
@@ -168,6 +180,7 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
                 warn.append('M')
             if current_l + (l_target - current_l) < safety_days:
                 warn.append('L')
+
             return pd.Series({
                 '补S': max(s_target - current_s, 0),
                 '补M': max(m_target - current_m, 0),
