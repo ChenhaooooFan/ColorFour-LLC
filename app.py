@@ -104,6 +104,41 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     df_this = clean_variation(df_this)
     df_last = clean_variation(df_last)
 
+    # 款式频率图
+    variation_counts = df_this['Variation Name'].value_counts()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sns.barplot(x=variation_counts.values, y=variation_counts.index, palette='viridis', ax=ax)
+    ax.set_xlabel('Count')
+    ax.set_ylabel('Variation')
+    ax.set_title('Variation Frequency')
+    for i, v in enumerate(variation_counts.values):
+        ax.text(v, i, str(v), va='center')
+    st.pyplot(fig)
+
+    # 尺码分布图
+    size_counts = df_this['Size'].value_counts(normalize=True) * 100
+    fig, ax = plt.subplots(figsize=(8, 4))
+    sns.barplot(x=size_counts.values, y=size_counts.index, palette='coolwarm', ax=ax)
+    ax.set_xlabel('Percentage')
+    ax.set_ylabel('Size')
+    ax.set_title('Size Frequency (S, M, L)')
+    for i, v in enumerate(size_counts.values):
+        ax.text(v, i, f'{v:.2f}%', va='center')
+    st.pyplot(fig)
+
+    # 形状分析图
+    df_this = df_this.dropna(subset=['Seller SKU'])
+    df_this['Shape'] = df_this['Seller SKU'].astype(str).str[2]
+    shape_counts = df_this['Shape'].map({'F': 'Rectangle', 'X': 'Almond', 'J': 'Pointed'}).value_counts(normalize=True) * 100
+    fig, ax = plt.subplots(figsize=(8, 4))
+    sns.barplot(x=shape_counts.values, y=shape_counts.index, palette='magma', ax=ax)
+    ax.set_xlabel('Percentage')
+    ax.set_ylabel('Shape')
+    ax.set_title('Nail Shape Frequency')
+    for i, v in enumerate(shape_counts.values):
+        ax.text(v, i, f'{v:.2f}%', va='center')
+    st.pyplot(fig)
+
     df_this['Size'] = df_this['Variation'].astype(str).str.rsplit(',', n=1).str[1].str.strip()
 
     # Calculate Zero Price Count average and future giveaways
@@ -116,6 +151,21 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
         'Zero Price Count': zero_price,
         'Last Week Sold Count': df_last[df_last['SKU Unit Original Price'] > 0]['Variation Name'].value_counts()
     }).fillna(0).astype(int)
+
+    # 销售 + 免费占比图
+    total_count = summary_df['Sold Count'] + summary_df['Zero Price Count']
+    fig, ax = plt.subplots(figsize=(16, 12))
+    ax.barh(summary_df.index, summary_df['Sold Count'], color='blue', label='Sold')
+    ax.barh(summary_df.index, summary_df['Zero Price Count'], left=summary_df['Sold Count'], color='red', alpha=0.6, label='Free')
+    for i, (name, sold, zero, total) in enumerate(zip(summary_df.index, summary_df['Sold Count'], summary_df['Zero Price Count'], total_count)):
+        free_text = f"{zero}/{total} ({(zero / total * 100):.1f}%)" if total > 0 else f"{zero}/0 (0.0%)"
+        ax.text(sold + zero + 2, i, free_text, va='center', ha='left', color='red' if zero / total > 0.65 else 'black', fontsize=10)
+    ax.set_xlabel("Count")
+    ax.set_title("本周销量 + 免费占比图")
+    ax.legend()
+    ax.set_yticks([])
+    ax.invert_yaxis()
+    st.pyplot(fig)
 
     summary_df['Total Count'] = summary_df['Sold Count'] + summary_df['Zero Price Count']
     summary_df['Zero Price Percentage'] = (summary_df['Zero Price Count'] / summary_df['Total Count'].replace(0, 1)) * 100
