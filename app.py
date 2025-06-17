@@ -104,6 +104,9 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     df_this = clean_variation(df_this)
     df_last = clean_variation(df_last)
 
+    # 提前生成 Size 列，避免图表模块报错
+    df_this['Size'] = df_this['Variation'].astype(str).str.rsplit(',', n=1).str[1].str.strip()
+
     # 款式频率图
     variation_counts = df_this['Variation Name'].value_counts()
     fig, ax = plt.subplots(figsize=(12, 6))
