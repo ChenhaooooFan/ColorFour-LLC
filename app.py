@@ -156,29 +156,45 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     }).fillna(0).astype(int)
 
     # 销售 + 免费占比图
-    total_count = summary_df['Sold Count'] + summary_df['Zero Price Count']
+    df_this['SKU Unit Original Price'] = pd.to_numeric(df_this['SKU Unit Original Price'], errors='coerce').fillna(0)
+    df_last['SKU Unit Original Price'] = pd.to_numeric(df_last['SKU Unit Original Price'], errors='coerce').fillna(0)
+    sold_this = df_this[df_this['SKU Unit Original Price'] > 0]['Variation Name'].value_counts()
+    zero_price = df_this[df_this['SKU Unit Original Price'] == 0]['Variation Name'].value_counts()
+    sold_last = df_last[df_last['SKU Unit Original Price'] > 0]['Variation Name'].value_counts()
+    total_count = sold_this.add(zero_price, fill_value=0)
+
+    summary_df = pd.DataFrame({
+        'Sold Count': sold_this,
+        'Zero Price Count': zero_price,
+        'Total Count': total_count,
+        'Last Week Sold Count': sold_last
+    }).fillna(0).astype(int)
+
+    summary_df['Zero Price Percentage'] = (summary_df['Zero Price Count'] / summary_df['Total Count'].replace(0, 1)) * 100
+    summary_df['Growth Rate'] = (
+        (summary_df['Sold Count'] - summary_df['Last Week Sold Count']) /
+        summary_df['Last Week Sold Count'].replace(0, 1)
+    ) * 100
+    summary_df = summary_df.sort_values(by='Total Count', ascending=False)
+
     fig, ax = plt.subplots(figsize=(16, 12))
     ax.barh(summary_df.index, summary_df['Sold Count'], color='blue', label='Sold')
     ax.barh(summary_df.index, summary_df['Zero Price Count'], left=summary_df['Sold Count'], color='red', alpha=0.6, label='Free')
-    for i, (name, sold, zero, total) in enumerate(zip(summary_df.index, summary_df['Sold Count'], summary_df['Zero Price Count'], total_count)):
+    for i, (name, sold, zero, total, perc, growth) in enumerate(zip(
+        summary_df.index, summary_df['Sold Count'], summary_df['Zero Price Count'],
+        summary_df['Total Count'], summary_df['Zero Price Percentage'], summary_df['Growth Rate']
+    )):
+        growth_text = f" ↑ {growth:.1f}%" if growth > 0 else f" ↓ {abs(growth):.1f}%" if growth < 0 else " → 0.0%"
+        color = '#2ecc71' if growth > 0 else '#e74c3c' if growth < 0 else 'gray'
+        ax.text(-5, i, f"{name}{growth_text}", ha='right', va='center', fontsize=10, color=color, fontweight='bold')
         free_text = f"{zero}/{total} ({(zero / total * 100):.1f}%)" if total > 0 else f"{zero}/0 (0.0%)"
-        ax.text(sold + zero + 2, i, free_text, va='center', ha='left', color='red' if zero / total > 0.65 else 'black', fontsize=10)
+        ax.text(sold + zero + 2, i, free_text, va='center', ha='left', color='red' if perc > 65 else 'black', fontsize=10)
     ax.set_xlabel("Count")
-    ax.set_title("本周销量 + 免费占比图")
+    ax.set_title("Week 16 vs Week 15: Sales + Growth + Free Sample Rate")
     ax.legend()
     ax.set_yticks([])
     ax.invert_yaxis()
     st.pyplot(fig)
-
-    summary_df['Total Count'] = summary_df['Sold Count'] + summary_df['Zero Price Count']
-    summary_df['Zero Price Percentage'] = (summary_df['Zero Price Count'] / summary_df['Total Count'].replace(0, 1)) * 100
-    summary_df['Growth Rate'] = ((summary_df['Sold Count'] - summary_df['Last Week Sold Count']) / summary_df['Last Week Sold Count'].replace(0, 1)) * 100
-    summary_df['Daily Avg'] = summary_df['Total Count'] / 7
-    summary_df['Growth Multiplier'] = 1 + summary_df['Growth Rate'] / 100
-    summary_df.loc[summary_df['Growth Multiplier'] > 1.8, 'Growth Multiplier'] = 1 + summary_df['Growth Rate'].mean() / 100
-
-    total_days = production_days + shipping_days + safety_days
-    summary_df['Restock Qty'] = (summary_df['Daily Avg'] * total_days * summary_df['Growth Multiplier']).round().astype(int)
 
     # 加入未来赠送量
     summary_df['未来赠送量'] = summary_df.index.map(future_gift_qty).fillna(0).astype(int)
