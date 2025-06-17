@@ -175,11 +175,13 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     ax.invert_yaxis()
     st.pyplot(fig)
 
-     # 自动补货计算
+    # 自动补货计算
     st.subheader("📦 补货建议表")
-    production_days = 6
-    shipping_days = 12
-    safety_days = 12
+    st.sidebar.markdown("### ⏱️ 补货时间设置")
+    production_days = st.sidebar.number_input("生产周期（天）", min_value=0, max_value=60, value=6, step=1)
+    shipping_days = st.sidebar.number_input("运输周期（天）", min_value=0, max_value=60, value=12, step=1)
+    safety_days = st.sidebar.number_input("安全库存天数", min_value=0, max_value=60, value=12, step=1)
+
     total_days = production_days + shipping_days + safety_days
     summary_df['Daily Avg'] = summary_df['Total Count'] / 7
     summary_df['Growth Multiplier'] = 1 + summary_df['Growth Rate'] / 100
