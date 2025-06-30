@@ -203,15 +203,58 @@ if st.button("🚀 点击生成分析报表") and this_week_file and last_week_f
     summary_df['未来赠送量'] = summary_df.index.map(future_gift_qty).fillna(0).astype(int)
     summary_df['补货总量含赠送'] = summary_df['Restock Qty'] + summary_df['未来赠送量']
 
-    # ========== 库存与最终补货量 ==========
-    if inventory_file:
-        inventory_df = pd.read_csv(inventory_file)
-        inventory_df = inventory_df.rename(columns={'Name': 'Variation Name', 'In_stock': 'In Stock', 'On_the_way': 'On The Way'})
-        inventory_df['库存数量'] = inventory_df['In Stock'].fillna(0) + inventory_df['On The Way'].fillna(0)
-        inventory_df['Variation Name'] = inventory_df['Variation Name'].astype(str).str.replace("’", "'").str.replace(r'\s+', ' ', regex=True).str.strip().str.lower().str.title()
-        stock_map = inventory_df.groupby('Variation Name')['库存数量'].sum()
-        summary_df['当前库存'] = summary_df.index.map(stock_map).fillna(0).astype(int)
-        summary_df['最终补货量'] = (summary_df['补货总量含赠送'] - summary_df['当前库存']).clip(lower=0)
+    import streamlit as st
+import pandas as pd
+
+st.title("库存与补货量计算")
+
+# 上传 summary 文件（必须包含 index 为 Variation Name，列为 补货总量含赠送）
+summary_file = st.file_uploader("上传 summary 文件（必须包含 Variation Name 和 补货总量含赠送 列）", type=["csv"])
+inventory_file = st.file_uploader("上传库存文件（必须包含 Name, In_stock, On_the_way 列）", type=["csv"])
+
+if summary_file and inventory_file:
+    try:
+        # 读取 summary
+        summary_df = pd.read_csv(summary_file)
+        if 'Variation Name' not in summary_df.columns or '补货总量含赠送' not in summary_df.columns:
+            st.error("❌ Summary 文件必须包含列：'Variation Name' 和 '补货总量含赠送'")
+        else:
+            # 设置索引
+            summary_df['Variation Name'] = summary_df['Variation Name'].astype(str).str.replace("’", "'").str.replace(r'\s+', ' ', regex=True).str.strip().str.lower().str.title()
+            summary_df.set_index('Variation Name', inplace=True)
+
+            # 读取库存
+            inventory_df = pd.read_csv(inventory_file)
+            st.write("📄 原始库存文件列名：", inventory_df.columns.tolist())
+
+            inventory_df = inventory_df.rename(columns={
+                'Name': 'Variation Name',
+                'In_stock': 'In Stock',
+                'On_the_way': 'On The Way'
+            })
+
+            # 数据标准化
+            inventory_df['Variation Name'] = inventory_df['Variation Name'].astype(str).str.replace("’", "'").str.replace(r'\s+', ' ', regex=True).str.strip().str.lower().str.title()
+
+            # 计算库存数量
+            inventory_df['库存数量'] = inventory_df['In Stock'].fillna(0) + inventory_df['On The Way'].fillna(0)
+
+            # 汇总库存
+            stock_map = inventory_df.groupby('Variation Name')['库存数量'].sum()
+
+            # 匹配库存
+            summary_df['当前库存'] = summary_df.index.map(stock_map).fillna(0).astype(int)
+
+            # 计算最终补货量
+            summary_df['最终补货量'] = (summary_df['补货总量含赠送'] - summary_df['当前库存']).clip(lower=0).astype(int)
+
+            # 展示结果
+            st.success("✅ 成功计算库存与补货量")
+            st.dataframe(summary_df)
+
+    except Exception as e:
+        st.error(f"❌ 出现错误：{e}")
+
 
         # ========== 尺码拆分与预警 ==========
         st.subheader("📐 按尺码比例分配补货量（2:2:1）")
